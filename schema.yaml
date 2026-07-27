@@ -1,0 +1,107 @@
+components:
+
+  schemas:
+
+    Element:
+      type: object
+      properties:
+        name:
+          type: string
+        datatype:
+          type: string
+        description:
+          type: string
+      required:
+        - name
+
+    ElementList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Element'
+
+    ElementValue:
+      allOf:
+        - type: object
+          properties:
+            value:
+              type: string
+          required:
+            - value
+        - $ref: '#/components/schemas/Element'
+
+    ElementValueList:
+      type: array
+      items:
+        $ref: '#/components/schemas/ElementValue'
+
+    Constraint:
+      allOf:
+        - type: object
+          properties:
+            category:
+              type: string
+            obligation:
+              type: boolean
+            required:
+              type: boolean
+          required:
+            - category
+            - obligation
+            - required
+        - $ref: '#/components/schemas/Element'
+
+    ConstraintList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Constraint'
+
+    ConstraintValue:
+      allOf:
+        - $ref: '#/components/schemas/ElementValue'
+        - $ref: '#/components/schemas/Constraint'
+
+    ConstraintValueList:
+      type: array
+      items:
+        $ref: '#/components/schemas/ConstraintValue'
+
+    ConstrainedQuery:
+      type: object
+      properties:
+        constraints:
+          $ref: '#/components/schemas/ConstraintValueList'
+        query:
+          type: string
+      required:
+        - constraints
+        - query
+
+    Relationship:
+      type: object
+      properties:
+        description:
+          type: string
+        type:
+          type: string
+        target:
+          type: string
+        properties:
+          $ref: '#/components/schemas/ElementValueList'
+      required:
+        - type
+        - target
+
+    RelationshipList:
+      type: array
+      items:
+        $ref: '#/components/schemas/Relationship'
+
+    Subject:
+      type: object
+      properties:
+        description:
+          type: string
+        properties:
+          $ref: '#/components/schemas/ElementValueList'
+        relationships:
+          $ref: '#/components/schemas/RelationshipList'

@@ -1,0 +1,31 @@
+/*
+ * Copyright (c) 2026, Tranquil Data, Inc. All rights reserved.
+ */
+
+syntax = "proto3";
+
+import "google/protobuf/struct.proto";
+
+option go_package = ".;proto";
+
+package hub_api;
+
+message Query {
+    string dbms_query = 1;
+    repeated Constraint constraint = 2;
+}
+
+message Constraint {
+    string name = 1;
+    string category = 2;
+    bool obligation = 3;
+    string scalar = 4;
+}
+
+message Record {
+    map<string,google.protobuf.Value> fields = 1;
+}
+
+service QueryAPI {
+    rpc Records(Query) returns (stream Record) {}
+}

@@ -8,7 +8,7 @@ info:
     This is the complete API for the agent hub. It covers routines for looking
     up subject, schema, and variable state as well as reding from and writing to
     the durable cache.
-  version: 1.0.1
+  version: 1.0.0
   license:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -20,6 +20,16 @@ externalDocs:
 tags:
   - name: root
     description: Routines to query status and state for a specific peer.
+  - name: cache
+    description: Routines to manage contents of the durable cache.
+  - name: constraints
+    description: Routines to access the available query constraints.
+  - name: query
+    description: Routines to query the durable cache.
+  - name: schema
+    description: Routines to access the durable cache schema details.
+  - name: subjects
+    description: Routines to access subjects from context.
 
 servers:
   - url: http://localhost
@@ -43,3 +53,239 @@ paths:
         '500':
           description: There is some internal error with the peer
 
+  #
+  # Cache API paths
+  #
+
+  /cache:
+
+    put:
+      tags:
+        - cache
+      summary: Creates or updates cached state for one or more records
+      operationId: upsertRecords
+      parameters:
+        - in: query
+          name: resolverGroup
+          schema:
+            type: string
+          required: false
+          description: Name of the resolver group for this record, or empty if the default should be used
+      requestBody:
+        required: true
+        description: See the product documentation for the records export type for details about input formats
+        content:
+          application/json:
+            schema:
+              type: string
+          application/xml:
+            schema:
+              type: string
+          text/csv:
+            schema:
+              type: string
+          application/fhir+json:
+            schema:
+              type: string
+          application/fhir+xml:
+            schema:
+              type: string
+          application/octet-stream:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: The named resolver group was unknown
+        '500':
+          description: There was some internal failure finding the resolver group, evaluating the record, or writing to the durable cache
+
+    delete:
+      tags:
+        - cache
+      summary: Evicts a single record from the durable cache
+      operationId: evictRecord
+      parameters:
+        - in: query
+          name: recordId
+          schema:
+            type: string
+          required: true
+          description: Identifier for a specific record to evict from the cache
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: The required record identifier query parameter was missing
+        '404':
+          description: The identified record was unknown
+        '415':
+          description: The requested record format type was unsupported
+        '500':
+          description: There was some internal failure evicting the record
+
+  #
+  # Constraints API paths
+  #
+
+  /constraints:
+
+    get:
+      tags:
+        - constraints
+      summary: Returns all available query constrains 
+      operationId: getConstraints
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './schema.yaml#/components/schemas/ConstraintList'
+        '500':
+          description: There was some internal failure providing all categories
+
+  #
+  # Query API paths
+  #
+
+  /query/ids:
+
+    put:
+      tags:
+        - query
+      summary: Returns the complete set of record identifiers valid for the given constraint values
+      operationId: getRecordIdentifiers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema.yaml#/components/schemas/ConstraintValueList'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: The constraint values were missing or invalid
+        '500':
+          description: There was some internal failure resolving the constrained record identifiers
+
+  /query/records:
+
+    put:
+      tags: 
+        - query
+      summary: Returns the set of records from the durable cache for the given query that are valid for the given constraints
+      description: >
+        Note that this REST interface is most useful for aggregate queries that return a single record, or operational
+        queries that will typically return a small number of results. For queries that are expected to return large number
+        of results, there is also a [streaming gRPC interface](./hub_api_query.proto).
+      operationId: readRecords
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schema.yaml#/components/schemas/ConstrainedQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: The constraint values were missing or invalid, or no query was provided
+        '500':
+          description: There was some internal failure resolving the constrained records
+
+  #
+  # Schema API paths
+  #
+
+  /schema/categories:
+
+    get:
+      tags:
+        - schema
+      summary: Returns all categories that make up the durable cache's schema
+      operationId: getCategories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './schema.yaml#/components/schemas/ElementList'
+        '500':
+          description: There was some internal failure providing all categories
+
+  /schema/fields:
+
+    get:
+      tags:
+        - schema
+      summary: Returns all fields for a given category for the durable cache's schema
+      operationId: getFieldsForCategory
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: true
+          description: The name of a category as returned by getCategories
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './schema.yaml#/components/schemas/ElementList'
+        '400':
+          description: The required category query parameter was missing
+        '404':
+          description: The named category was unknown
+        '500':
+          description: There was some internal failure providing the fields
+
+
+  #
+  # Subjects API paths
+  #
+
+  /subjects:
+
+    get:
+      tags:
+        - subjects
+      summary: Returns a single subject's properties and relationships
+      operationId: getSubject
+      parameters:
+        - in: query
+          name: subject
+          schema:
+            type: string
+          required: true
+          description: The name of a subject
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './schema.yaml#/components/schemas/Subject'
+        '400':
+          description: The required subject query parameter was missing
+        '404':
+          description: The named subject was unknown
+        '500':
+          description: There was some internal failure resolving the requested subject
