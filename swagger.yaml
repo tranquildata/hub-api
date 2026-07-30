@@ -109,6 +109,12 @@ paths:
       tags:
         - cache
       summary: Evicts a single record from the durable cache
+      description: >
+        **This function is currently not supported**. We are still gathering feedback to understand why and when
+        cache eviction needs to happen. For instance, is this done because a customer closes their account,
+        because a source of data is found to be unreliable, or because an import mistake means a single record
+        needs to be removed? As we gather use-cases, we'll get a better sense of how this routine is used, and
+        how/if it should be supported going forward.
       operationId: evictRecord
       parameters:
         - in: query
